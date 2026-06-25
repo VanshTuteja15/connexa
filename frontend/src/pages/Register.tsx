@@ -21,7 +21,7 @@ export default function Register() {
 
     try {
       await register(orgName, name, email, password);
-      navigate('/home');
+      navigate('/connect-database');
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError((err.response?.data as { error?: string })?.error || 'Registration failed. Please try again.');
@@ -41,7 +41,7 @@ export default function Register() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
               <Table2 className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-slate-900">CaseCore</span>
+            <span className="text-2xl font-bold text-slate-900">Connexa</span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-slate-900">Create your workspace</h1>
           <p className="mt-2 text-sm text-slate-500">Register your organization to get started</p>

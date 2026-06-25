@@ -1,3 +1,89 @@
+export interface DatabaseConnection {
+  id: string;
+  organization_id: string;
+  name: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  ssl: boolean;
+  has_password: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConnectionFormData {
+  name: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  password: string;
+  ssl: boolean;
+}
+
+export interface SchemaColumn {
+  name: string;
+  type: string;
+  nullable: boolean;
+  default: string | null;
+  is_primary_key: boolean;
+}
+
+export interface SchemaTable {
+  name: string;
+  columns: SchemaColumn[];
+  foreign_keys: Array<{
+    column: string;
+    references_table: string;
+    references_column: string;
+  }>;
+  row_count_estimate: number;
+}
+
+export interface SchemaResponse {
+  connection_id: string;
+  database: string;
+  tables: SchemaTable[];
+}
+
+export interface GenerateSQLResponse {
+  sql: string;
+  question: string;
+  connection_id: string;
+  generated_at: string;
+}
+
+export interface QueryRunResponse {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+  execution_time_ms: number;
+  truncated: boolean;
+}
+
+export interface QueryHistoryRecord {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  connection_id: string;
+  connection_name?: string;
+  question: string | null;
+  generated_sql: string;
+  row_count: number | null;
+  execution_time_ms: number | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface HistoryListResponse {
+  records: QueryHistoryRecord[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface Organization {
   id: string;
   name: string;

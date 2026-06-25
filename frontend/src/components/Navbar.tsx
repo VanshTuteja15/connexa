@@ -20,7 +20,7 @@ export default function Navbar({ chatOpen, onToggleChat, activeTab, onTabChange 
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
               <Table2 className="h-4 w-4 text-white" />
             </div>
-            <span className="hidden font-bold text-slate-900 sm:inline">CaseCore</span>
+            <span className="hidden font-bold text-slate-900 sm:inline">Connexa</span>
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">

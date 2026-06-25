@@ -1,5 +1,5 @@
 {
-  "name": "casecore-frontend",
+  "name": "connexa-frontend",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,8 @@
     "axios": "^1.6.2",
     "xlsx": "^0.18.5",
     "lucide-react": "^0.294.0",
-    "clsx": "^2.0.0"
+    "clsx": "^2.0.0",
+    "react-hot-toast": "^2.4.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",

@@ -7,6 +7,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
 } from '../middleware/auth';
+import { sendSuccess, sendError } from '../utils/response';
 import {
   AuthRequest,
   RegisterBody,
@@ -71,12 +72,12 @@ export async function register(req: AuthRequest, res: Response): Promise<void> {
     const { orgName, email, password, name } = req.body as RegisterBody;
 
     if (!orgName || !email || !password) {
-      res.status(400).json({ error: 'Organization name, email, and password are required' });
+      sendError(res, 'Organization name, email, and password are required', 400);
       return;
     }
 
     if (password.length < 8) {
-      res.status(400).json({ error: 'Password must be at least 8 characters' });
+      sendError(res, 'Password must be at least 8 characters', 400);
       return;
     }
 
@@ -85,7 +86,7 @@ export async function register(req: AuthRequest, res: Response): Promise<void> {
       [email.toLowerCase()]
     );
     if (existingUser.length > 0) {
-      res.status(409).json({ error: 'Email already registered' });
+      sendError(res, 'Email already registered', 409);
       return;
     }
 
@@ -114,7 +115,7 @@ export async function register(req: AuthRequest, res: Response): Promise<void> {
 
     await saveRefreshToken(user.id, refreshToken);
 
-    res.status(201).json({
+    sendSuccess(res, {
       accessToken,
       refreshToken,
       user: {
@@ -126,10 +127,10 @@ export async function register(req: AuthRequest, res: Response): Promise<void> {
         created_at: user.created_at,
       },
       organization: org,
-    });
+    }, 201);
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    sendError(res, 'Registration failed', 500);
   }
 }
 
@@ -138,7 +139,7 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
     const { email, password } = req.body as LoginBody;
 
     if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' });
+      sendError(res, 'Email and password are required', 400);
       return;
     }
 
@@ -161,7 +162,7 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
     );
 
     if (userRows.length === 0) {
-      res.status(401).json({ error: 'Invalid email or password' });
+      sendError(res, 'Invalid email or password', 401);
       return;
     }
 
@@ -169,7 +170,7 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
     const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
-      res.status(401).json({ error: 'Invalid email or password' });
+      sendError(res, 'Invalid email or password', 401);
       return;
     }
 
@@ -179,7 +180,7 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
 
     await saveRefreshToken(user.id, refreshToken);
 
-    res.json({
+    sendSuccess(res, {
       accessToken,
       refreshToken,
       user: {
@@ -200,7 +201,7 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    sendError(res, 'Login failed', 500);
   }
 }
 
@@ -209,7 +210,7 @@ export async function refresh(req: AuthRequest, res: Response): Promise<void> {
     const { refreshToken } = req.body as RefreshBody;
 
     if (!refreshToken) {
-      res.status(400).json({ error: 'Refresh token required' });
+      sendError(res, 'Refresh token required', 400);
       return;
     }
 
@@ -217,7 +218,7 @@ export async function refresh(req: AuthRequest, res: Response): Promise<void> {
     try {
       decoded = verifyRefreshToken(refreshToken);
     } catch {
-      res.status(401).json({ error: 'Invalid or expired refresh token' });
+      sendError(res, 'Invalid or expired refresh token', 401);
       return;
     }
 
@@ -237,7 +238,7 @@ export async function refresh(req: AuthRequest, res: Response): Promise<void> {
     );
 
     if (tokenRows.length === 0) {
-      res.status(401).json({ error: 'Refresh token not found' });
+      sendError(res, 'Refresh token not found', 401);
       return;
     }
 
@@ -245,7 +246,7 @@ export async function refresh(req: AuthRequest, res: Response): Promise<void> {
 
     if (new Date(record.expires_at) < new Date()) {
       await query('DELETE FROM refresh_tokens WHERE id = $1', [record.id]);
-      res.status(401).json({ error: 'Refresh token expired' });
+      sendError(res, 'Refresh token expired', 401);
       return;
     }
 
@@ -256,10 +257,10 @@ export async function refresh(req: AuthRequest, res: Response): Promise<void> {
       organization_id: record.organization_id,
     });
 
-    res.json({ accessToken });
+    sendSuccess(res, { accessToken });
   } catch (error) {
     console.error('Refresh error:', error);
-    res.status(500).json({ error: 'Token refresh failed' });
+    sendError(res, 'Token refresh failed', 500);
   }
 }
 
@@ -271,17 +272,17 @@ export async function logout(req: AuthRequest, res: Response): Promise<void> {
       await query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
     }
 
-    res.json({ message: 'Logged out successfully' });
+    sendSuccess(res, { message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
-    res.status(500).json({ error: 'Logout failed' });
+    sendError(res, 'Logout failed', 500);
   }
 }
 
 export async function getMe(req: AuthRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
-      res.status(401).json({ error: 'Authentication required' });
+      sendError(res, 'Authentication required', 401);
       return;
     }
 
@@ -305,13 +306,13 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
     );
 
     if (userRows.length === 0) {
-      res.status(404).json({ error: 'User not found' });
+      sendError(res, 'User not found', 404);
       return;
     }
 
     const user = userRows[0];
 
-    res.json({
+    sendSuccess(res, {
       user: {
         id: user.id,
         email: user.email,
@@ -331,6 +332,6 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
     });
   } catch (error) {
     console.error('GetMe error:', error);
-    res.status(500).json({ error: 'Failed to fetch user profile' });
+    sendError(res, 'Failed to fetch user profile', 500);
   }
 }

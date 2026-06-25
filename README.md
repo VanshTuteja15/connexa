@@ -1,163 +1,120 @@
-# CaseCore — AI-Powered Case Management SaaS (TypeScript)
+# Connexa
 
-A multi-tenant, white-label case management platform with Excel-style tables, natural language AI chat, and complete organization data isolation. Built with **strict TypeScript** across the full stack.
+> AI-powered natural language database queries. Connect your PostgreSQL database, ask questions in plain English, get SQL and results instantly.
 
-## Tech Stack
+## Features
+
+- 🔌 Connect any PostgreSQL database securely
+- 🤖 Natural language to SQL via local AI (Ollama/LLaMA 3)
+- 🛡️ Read-only safety guard — only SELECT queries allowed
+- 📊 Schema explorer with relationships
+- 🕐 Full query history
+- 📤 Export results as CSV or Excel
+- 🏢 Multi-tenant — one instance, many organizations
+
+## Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS, TanStack Table |
-| Backend | Node.js, Express, TypeScript, ts-node-dev |
+| Frontend | React 18, Vite, TypeScript, Tailwind CSS |
+| Backend | Node.js, Express, TypeScript |
 | Database | PostgreSQL + pgvector |
 | AI | Ollama (Llama 3) + LangChain.js |
 | Auth | JWT (access + refresh) + bcrypt |
-| Billing | Stripe subscriptions |
-| Export | SheetJS (xlsx) |
 
 ## Prerequisites
 
-- **Node.js** 18+
-- **PostgreSQL** 14+ with [pgvector](https://github.com/pgvector/pgvector)
-- **Ollama** ([ollama.ai](https://ollama.ai))
+- Node.js 18+
+- PostgreSQL 14+
+- Ollama ([ollama.ai](https://ollama.ai))
 
-## 1. Clone and Install
+## Setup
 
-```bash
-cd backend
-npm install
-
-cd ../frontend
-npm install
-```
-
-## 2. Database Setup
+### 1. Install dependencies
 
 ```bash
-psql -U postgres -c "CREATE DATABASE casecore;"
-psql -U postgres -d casecore -f backend/database/schema.sql
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-## 3. Environment Variables
-
-### Backend (`backend/.env`)
+### 2. Configure environment
 
 ```bash
 cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
 
-```env
-PORT=5000
-DATABASE_URL=postgresql://postgres:password@localhost:5432/casecore
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_REFRESH_SECRET=your_refresh_secret_here
-OLLAMA_BASE_URL=http://localhost:11434
-STRIPE_SECRET_KEY=sk_test_your_stripe_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-CLIENT_URL=http://localhost:5173
+Generate a 32-byte encryption key:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Frontend (`frontend/.env` — optional)
+### 3. Database setup
 
-```env
-VITE_API_URL=/api
+```bash
+psql -U postgres -c "CREATE DATABASE connexa;"
+psql -U postgres -d connexa -f backend/database/schema.sql
+cd backend && npm run migrate
 ```
 
-## 4. Ollama Setup
+### 4. Ollama
 
 ```bash
 ollama pull llama3
-ollama pull nomic-embed-text
 ```
 
-## 5. Run Development Servers
+### 5. Demo Database
 
 ```bash
-# Terminal 1 — Backend (TypeScript with hot reload)
 cd backend
-npm run dev
+npm run seed:demo
+```
 
-# Terminal 2 — Frontend
-cd frontend
-npm run dev
+This seeds a sample customers/orders/products database and registers a demo connection for your first organization.
+
+### 6. Run
+
+```bash
+# Terminal 1
+cd backend && npm run dev
+
+# Terminal 2
+cd frontend && npm run dev
 ```
 
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:5000/api
-- Health check: http://localhost:5000/api/health
+- API: http://localhost:3001/api
 
-## 6. Production Build
-
-```bash
-cd backend && npm run build && npm start
-cd frontend && npm run build
-```
-
-## 7. First Steps
+## First Steps
 
 1. Register at http://localhost:5173/register
-2. Create your first case via **New Case**
-3. Open **AI Chat** and try: "Show open cases", "Summarize this week"
-4. Export cases to Excel with the **Export** button
+2. Go to **Connections** and add a PostgreSQL database (or use the demo connection after `seed:demo`)
+3. Open **Schema** to explore tables
+4. Use **AI Query** to ask: "Show top 10 customers by total orders"
+5. Export results as CSV or Excel
 
-## Project Structure
+## API Overview
 
-```
-project/
-├── backend/
-│   ├── src/
-│   │   ├── types/          # Shared TypeScript interfaces
-│   │   ├── config/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   └── app.ts
-│   ├── database/schema.sql
-│   └── tsconfig.json
-├── frontend/
-│   ├── src/
-│   │   ├── types/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── context/
-│   │   ├── hooks/
-│   │   └── api/
-│   └── tsconfig.json
-└── README.md
-```
+All endpoints return `{ success: boolean, data?, error? }`.
 
-## TypeScript Conventions
-
-- All source files use `.ts` or `.tsx` extensions
-- Strict mode enabled — no `any` types
-- Shared interfaces in `src/types/index.ts` (backend and frontend)
-- Express `AuthRequest` extends `Request` with typed `user` property
-- All API functions return typed `Promise<T>`
-
-## API Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/auth/register` | No | Register org + admin |
-| POST | `/api/auth/login` | No | Login |
-| POST | `/api/auth/refresh` | No | Refresh access token |
-| GET | `/api/auth/me` | Yes | Current user profile |
-| GET | `/api/cases` | Yes | List cases (filtered) |
-| POST | `/api/cases` | Yes | Create case |
-| PUT | `/api/cases/:id` | Yes | Update case |
-| DELETE | `/api/cases/:id` | Yes | Soft delete |
-| GET | `/api/cases/stats` | Yes | Dashboard statistics |
-| POST | `/api/ai/chat` | Yes | AI chat with RAG/SQL |
-| GET | `/api/export/cases` | Yes | Export to Excel |
-| POST | `/api/billing/checkout` | Yes | Stripe checkout |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/connections/test` | Test a database connection |
+| POST | `/api/connections/save` | Save a connection |
+| GET | `/api/connections` | List connections (no passwords) |
+| GET | `/api/schema/:connectionId` | Introspect database schema |
+| POST | `/api/query/generate` | NL → SQL |
+| POST | `/api/query/run` | Execute validated SELECT |
+| GET | `/api/history` | Query history |
 
 ## Security
 
-- All queries scoped by `organization_id`
-- Passwords hashed with bcrypt (12 rounds)
-- JWT access tokens: 15 min | Refresh tokens: 7 days
-- AI SQL generation restricted to SELECT only
-- Stripe webhooks verified with signing secret
+- Passwords encrypted with AES-256-GCM at rest
+- All queries validated by `validateSQL()` before execution
+- Organization scoping on every Connexa DB query via JWT
+- Rate limiting: 100 req/15min global, 10 req/min on query endpoints
+- Helmet security headers
 
 ## License
 

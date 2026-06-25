@@ -19,7 +19,7 @@ export default function Login() {
 
     try {
       await login(email, password);
-      navigate('/home');
+      navigate('/ai-query');
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError((err.response?.data as { error?: string })?.error || 'Login failed. Please try again.');
@@ -39,7 +39,7 @@ export default function Login() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
               <Table2 className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-slate-900">CaseCore</span>
+            <span className="text-2xl font-bold text-slate-900">Connexa</span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-slate-900">Welcome back</h1>
           <p className="mt-2 text-sm text-slate-500">Sign in to your organization workspace</p>
