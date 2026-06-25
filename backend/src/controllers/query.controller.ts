@@ -4,7 +4,8 @@ import { withOrg } from '../middleware/tenantIsolation';
 import { sendSuccess, sendError } from '../utils/response';
 import { isValidUuid } from '../utils/uuid';
 import { validateSQL } from '../utils/sql-safety';
-import { generateSQLFromQuestion } from '../services/ai-query.service';
+import { generateSQLFromQuestion } from '../services/ai.service';
+import { getSchema } from '../services/schema.service';
 import { runQuery } from '../services/query.service';
 
 interface GenerateBody {
@@ -33,20 +34,38 @@ export async function generateQueryHandler(req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const result = await generateSQLFromQuestion(organization_id, connection_id, question.trim());
-
-    if ('error' in result) {
-      sendError(res, result.error, 400);
+    const schema = await getSchema(organization_id, connection_id);
+    if (!schema) {
+      sendError(res, 'Connection not found', 404);
       return;
     }
 
-    const safety = validateSQL(result.sql);
+    if (schema.tables.length === 0) {
+      sendError(res, 'No tables found in the connected database', 400);
+      return;
+    }
+
+    let sql: string;
+    try {
+      sql = await generateSQLFromQuestion(question.trim(), schema);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate SQL';
+      sendError(res, message, 400);
+      return;
+    }
+
+    const safety = validateSQL(sql);
     if (!safety.safe) {
       sendError(res, safety.reason ?? 'Generated SQL failed safety check', 400);
       return;
     }
 
-    sendSuccess(res, result);
+    sendSuccess(res, {
+      sql,
+      question: question.trim(),
+      connection_id,
+      generated_at: new Date().toISOString(),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to generate SQL';
     sendError(res, message, 500);

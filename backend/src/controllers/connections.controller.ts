@@ -9,6 +9,8 @@ import {
   listConnections,
   updateConnection,
   deleteConnection,
+  testSavedConnection,
+  updateTestStatus,
 } from '../services/connection.service';
 import { ConnectionInput, ConnectionTestInput } from '../models/connection.model';
 
@@ -17,7 +19,11 @@ export async function testConnectionHandler(req: AuthRequest, res: Response): Pr
     const input = req.body as ConnectionTestInput;
     const result = await testConnection(input);
     if (result.ok) {
-      sendSuccess(res, { connected: true });
+      sendSuccess(res, {
+        success: true,
+        message: 'Connection successful',
+        latency_ms: result.latency_ms,
+      });
     } else {
       sendError(res, result.error ?? 'Connection failed', 400);
     }
@@ -47,6 +53,7 @@ export async function saveConnection(req: AuthRequest, res: Response): Promise<v
     }
 
     const connection = await createConnection(organization_id, input);
+    await updateTestStatus(connection.id, 'success');
     sendSuccess(res, connection, 201);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to save connection';
@@ -84,6 +91,32 @@ export async function updateConnectionHandler(req: AuthRequest, res: Response): 
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to update connection';
     sendError(res, message, 400);
+  }
+}
+
+export async function testSavedConnectionHandler(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { organization_id } = withOrg(req);
+    const { id } = req.params;
+
+    if (!isValidUuid(id)) {
+      sendError(res, 'Invalid connection ID', 400);
+      return;
+    }
+
+    const result = await testSavedConnection(organization_id, id);
+    if (result.ok) {
+      sendSuccess(res, {
+        success: true,
+        message: 'Connection successful',
+        latency_ms: result.latency_ms,
+      });
+    } else {
+      sendError(res, result.error ?? 'Connection failed', 400);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Connection test failed';
+    sendError(res, message, 500);
   }
 }
 

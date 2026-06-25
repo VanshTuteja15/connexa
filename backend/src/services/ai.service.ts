@@ -1,6 +1,6 @@
 import { Ollama } from 'ollama';
 import { Case, ServiceChatMessage } from '../types';
-
+import { SchemaResponse, formatSchemaForAI } from './schema.service';
 const ollama = new Ollama({
   host: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
 });
@@ -37,6 +37,41 @@ export async function chat(messages: ServiceChatMessage[], systemPrompt: string)
   });
 
   return response.message.content;
+}
+
+export async function generateSQLFromQuestion(question: string, schema: SchemaResponse): Promise<string> {
+  const schemaText = formatSchemaForAI(schema);
+  const model = process.env.OLLAMA_MODEL || 'llama3';
+
+  const systemPrompt = `You are a PostgreSQL expert. Given the database schema, write a single valid SELECT query.
+
+STRICT RULES:
+1. Output ONLY the raw SQL query — no explanation, no markdown, no backticks
+2. Only SELECT statements — never DELETE, DROP, UPDATE, INSERT, ALTER, CREATE, TRUNCATE
+3. Always use table aliases for clarity
+4. Add LIMIT 500 unless user asks for a count
+5. If the question cannot be answered with this schema, output exactly: CANNOT_ANSWER
+
+Schema:
+${schemaText}`;
+
+  const response = await ollama.chat({
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: question },
+    ],
+    stream: false,
+  });
+
+  let sql = response.message.content.trim();
+  sql = sql.replace(/```sql/gi, '').replace(/```/g, '').trim();
+
+  if (sql === 'CANNOT_ANSWER' || sql.includes('CANNOT_ANSWER')) {
+    throw new Error('This question cannot be answered with the available schema');
+  }
+
+  return sql;
 }
 
 export async function generateSQL(naturalLanguage: string, schema: string = CASES_SCHEMA): Promise<string> {

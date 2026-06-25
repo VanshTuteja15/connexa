@@ -49,13 +49,18 @@ function toPublic(conn: DatabaseConnection): ConnectionPublic {
     database: conn.database,
     username: conn.username,
     ssl: conn.ssl,
+    last_tested_at: conn.last_tested_at ? new Date(conn.last_tested_at).toISOString() : null,
+    last_test_status: conn.last_test_status,
     has_password: true,
     created_at: new Date(conn.created_at).toISOString(),
     updated_at: new Date(conn.updated_at).toISOString(),
   };
 }
 
-export async function testConnection(config: ConnectionTestInput): Promise<{ ok: boolean; error?: string }> {
+export async function testConnection(
+  config: ConnectionTestInput
+): Promise<{ ok: boolean; error?: string; latency_ms?: number }> {
+  const start = Date.now();
   const pool = new Pool({
     host: config.host,
     port: config.port,
@@ -71,7 +76,7 @@ export async function testConnection(config: ConnectionTestInput): Promise<{ ok:
     const client = await pool.connect();
     await client.query('SELECT 1');
     client.release();
-    return { ok: true };
+    return { ok: true, latency_ms: Date.now() - start };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Connection failed';
     return { ok: false, error: message };
@@ -211,6 +216,31 @@ export async function deleteConnection(
     [connectionId, organizationId]
   );
   return rows.length > 0;
+}
+
+export async function updateTestStatus(
+  connectionId: string,
+  status: 'success' | 'failed'
+): Promise<void> {
+  await query(
+    `UPDATE database_connections
+     SET last_tested_at = NOW(), last_test_status = $1, updated_at = NOW()
+     WHERE id = $2`,
+    [status, connectionId]
+  );
+}
+
+export async function testSavedConnection(
+  organizationId: string,
+  connectionId: string
+): Promise<{ ok: boolean; error?: string; latency_ms?: number }> {
+  const config = await getConnectionConfig(organizationId, connectionId);
+  if (!config) {
+    return { ok: false, error: 'Connection not found' };
+  }
+  const result = await testConnection(config);
+  await updateTestStatus(connectionId, result.ok ? 'success' : 'failed');
+  return result;
 }
 
 export function createUserPool(config: ConnectionTestInput, queryTimeoutMs = 30000): pg.Pool {

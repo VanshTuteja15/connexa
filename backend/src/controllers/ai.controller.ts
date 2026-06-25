@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { query } from '../config/db';
 import { withOrg } from '../middleware/tenantIsolation';
+import { sendSuccess, sendError } from '../utils/response';
 import { generateSQL, needsDatabaseQuery, summarizeCases } from '../services/ai.service';
 import { answerQuestion, indexDocument } from '../services/rag.service';
 import { AuthRequest, AIChatBody, Case, AIResponse } from '../types';
@@ -11,7 +12,7 @@ export async function chat(req: AuthRequest, res: Response): Promise<void> {
     const { message, conversationHistory = [] } = req.body as AIChatBody;
 
     if (!message || !message.trim()) {
-      res.status(400).json({ error: 'Message is required' });
+      sendError(res, 'Message is required', 400);
       return;
     }
 
@@ -29,7 +30,7 @@ export async function chat(req: AuthRequest, res: Response): Promise<void> {
             queryType: 'sql',
             data: [],
           };
-          res.json(emptyResponse);
+          sendSuccess(res, emptyResponse);
           return;
         }
 
@@ -46,7 +47,7 @@ export async function chat(req: AuthRequest, res: Response): Promise<void> {
             queryType: 'sql',
             data: rows,
           };
-          res.json(response);
+          sendSuccess(res, response);
           return;
         }
 
@@ -67,7 +68,7 @@ export async function chat(req: AuthRequest, res: Response): Promise<void> {
           queryType: 'sql',
           data: rows,
         };
-        res.json(response);
+        sendSuccess(res, response);
         return;
       } catch (sqlError) {
         const message = sqlError instanceof Error ? sqlError.message : 'SQL error';
@@ -81,10 +82,10 @@ export async function chat(req: AuthRequest, res: Response): Promise<void> {
       conversationHistory
     );
 
-    res.json(ragResponse);
+    sendSuccess(res, ragResponse);
   } catch (error) {
     console.error('AI chat error:', error);
-    res.status(500).json({ error: 'Failed to process AI chat request' });
+    sendError(res, 'Failed to process AI chat request', 500);
   }
 }
 
@@ -99,7 +100,7 @@ export async function indexDocumentHandler(req: AuthRequest, res: Response): Pro
     const { content, title } = req.body as IndexDocumentBody;
 
     if (!content || !content.trim()) {
-      res.status(400).json({ error: 'Document content is required' });
+      sendError(res, 'Document content is required', 400);
       return;
     }
 
@@ -107,11 +108,9 @@ export async function indexDocumentHandler(req: AuthRequest, res: Response): Pro
       title: title || 'Untitled Document',
     });
 
-    res.status(201).json({
-      message: 'Document indexed successfully',
-    });
+    sendSuccess(res, { message: 'Document indexed successfully' }, 201);
   } catch (error) {
     console.error('Index document error:', error);
-    res.status(500).json({ error: 'Failed to index document' });
+    sendError(res, 'Failed to index document', 500);
   }
 }

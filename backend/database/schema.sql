@@ -69,3 +69,40 @@ CREATE INDEX idx_cases_org ON cases(organization_id);
 CREATE INDEX idx_cases_status ON cases(status);
 CREATE INDEX idx_embeddings_org ON embeddings(organization_id);
 CREATE INDEX idx_embeddings_vector ON embeddings USING ivfflat (embedding vector_cosine_ops);
+
+-- User's connected external databases
+CREATE TABLE database_connections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  host VARCHAR(255) NOT NULL,
+  port INTEGER NOT NULL DEFAULT 5432,
+  database VARCHAR(255) NOT NULL,
+  username VARCHAR(255) NOT NULL,
+  password_encrypted TEXT NOT NULL,
+  ssl BOOLEAN DEFAULT false,
+  last_tested_at TIMESTAMPTZ,
+  last_test_status VARCHAR(20),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Query history for AI-generated queries
+CREATE TABLE query_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
+  connection_id UUID REFERENCES database_connections(id) ON DELETE SET NULL,
+  question TEXT,
+  generated_sql TEXT NOT NULL,
+  row_count INTEGER,
+  execution_time_ms INTEGER,
+  status VARCHAR(20) DEFAULT 'success',
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_connections_org ON database_connections(organization_id);
+CREATE INDEX idx_history_org ON query_history(organization_id);
+CREATE INDEX idx_history_created ON query_history(created_at DESC);
+CREATE INDEX idx_history_connection ON query_history(connection_id);

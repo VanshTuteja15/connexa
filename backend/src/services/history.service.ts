@@ -22,6 +22,7 @@ export interface HistoryListParams {
   connectionId?: string;
   from?: string;
   to?: string;
+  status?: string;
 }
 
 export async function listQueryHistory(
@@ -50,6 +51,12 @@ export async function listQueryHistory(
   if (params.to) {
     conditions.push(`qh.created_at <= $${idx}`);
     values.push(params.to);
+    idx += 1;
+  }
+
+  if (params.status && params.status !== 'all') {
+    conditions.push(`qh.status = $${idx}`);
+    values.push(params.status);
     idx += 1;
   }
 

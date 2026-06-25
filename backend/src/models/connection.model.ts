@@ -8,6 +8,8 @@ export interface DatabaseConnection {
   username: string;
   password_encrypted: string;
   ssl: boolean;
+  last_tested_at: Date | null;
+  last_test_status: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -31,6 +33,8 @@ export interface ConnectionPublic {
   database: string;
   username: string;
   ssl: boolean;
+  last_tested_at: string | null;
+  last_test_status: string | null;
   has_password: boolean;
   created_at: string;
   updated_at: string;

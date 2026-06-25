@@ -7,6 +7,8 @@ export interface DatabaseConnection {
   database: string;
   username: string;
   ssl: boolean;
+  last_tested_at: string | null;
+  last_test_status: string | null;
   has_password: boolean;
   created_at: string;
   updated_at: string;
@@ -243,10 +245,8 @@ export interface ExportButtonProps {
 }
 
 export interface NavbarProps {
-  chatOpen: boolean;
-  onToggleChat: () => void;
-  activeTab: 'dashboard' | 'cases';
-  onTabChange: (tab: 'dashboard' | 'cases') => void;
+  activeTab?: 'dashboard' | 'cases';
+  onTabChange?: (tab: 'dashboard' | 'cases') => void;
 }
 
 export interface CaseTableProps {

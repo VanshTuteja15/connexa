@@ -162,6 +162,10 @@ export async function getSchema(
 }
 
 export function formatSchemaForPrompt(schema: SchemaResponse): string {
+  return formatSchemaForAI(schema);
+}
+
+export function formatSchemaForAI(schema: SchemaResponse): string {
   return schema.tables
     .map((table) => {
       const colParts = table.columns.map((col) => {

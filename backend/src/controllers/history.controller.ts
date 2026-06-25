@@ -23,6 +23,7 @@ export async function listHistoryHandler(req: AuthRequest, res: Response): Promi
     const connectionId = getQueryParam(req.query.connection_id as string);
     const from = getQueryParam(req.query.from as string);
     const to = getQueryParam(req.query.to as string);
+    const status = getQueryParam(req.query.status as string);
 
     if (connectionId && !isValidUuid(connectionId)) {
       sendError(res, 'Invalid connection_id filter', 400);
@@ -36,6 +37,7 @@ export async function listHistoryHandler(req: AuthRequest, res: Response): Promi
       connectionId,
       from,
       to,
+      status,
     });
 
     sendSuccess(res, result);

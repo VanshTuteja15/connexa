@@ -1,9 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+import casesRoutes from './routes/cases.routes';
+import aiRoutes from './routes/ai.routes';
+import exportRoutes from './routes/export.routes';
 import connectionsRoutes from './routes/connections.routes';
 import schemaRoutes from './routes/schema.routes';
 import queryRoutes from './routes/query.routes';
@@ -15,7 +16,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(helmet());
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -23,23 +23,21 @@ app.use(
   })
 );
 
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { success: false, error: 'Too many requests. Please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use(globalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
+  res.json({
+    status: 'ok',
+    service: 'Connexa API',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/cases', casesRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/export', exportRoutes);
 app.use('/api/connections', connectionsRoutes);
 app.use('/api/schema', schemaRoutes);
 app.use('/api/query', queryRoutes);
@@ -59,7 +57,7 @@ app.use((err: HttpError, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Connexa API server running on port ${PORT}`);
+  console.log(`Connexa API running on port ${PORT}`);
 });
 
 export default app;

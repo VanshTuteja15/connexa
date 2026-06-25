@@ -9,6 +9,7 @@ router.use(authenticate);
 router.post('/test', connectionsController.testConnectionHandler);
 router.post('/save', connectionsController.saveConnection);
 router.get('/', connectionsController.listConnectionsHandler);
+router.post('/:id/test', connectionsController.testSavedConnectionHandler);
 router.put('/:id', connectionsController.updateConnectionHandler);
 router.delete('/:id', connectionsController.deleteConnectionHandler);
 

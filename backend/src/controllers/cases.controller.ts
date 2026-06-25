@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { query } from '../config/db';
 import { withOrg } from '../middleware/tenantIsolation';
+import { sendSuccess, sendError } from '../utils/response';
 import { indexCase, deleteEmbedding } from '../services/rag.service';
 import {
   AuthRequest,
@@ -112,7 +113,7 @@ export async function getAllCases(req: AuthRequest, res: Response): Promise<void
 
     const total = parseInt(countResult[0].total, 10);
 
-    res.json({
+    sendSuccess(res, {
       cases,
       pagination: {
         total,
@@ -123,7 +124,7 @@ export async function getAllCases(req: AuthRequest, res: Response): Promise<void
     });
   } catch (error) {
     console.error('GetAllCases error:', error);
-    res.status(500).json({ error: 'Failed to fetch cases' });
+    sendError(res, 'Failed to fetch cases', 500);
   }
 }
 
@@ -143,14 +144,14 @@ export async function getCaseById(req: AuthRequest, res: Response): Promise<void
     );
 
     if (cases.length === 0) {
-      res.status(404).json({ error: 'Case not found' });
+      sendError(res, 'Case not found', 404);
       return;
     }
 
-    res.json({ case: cases[0] });
+    sendSuccess(res, { case: cases[0] });
   } catch (error) {
     console.error('GetCaseById error:', error);
-    res.status(500).json({ error: 'Failed to fetch case' });
+    sendError(res, 'Failed to fetch case', 500);
   }
 }
 
@@ -158,7 +159,7 @@ export async function createCase(req: AuthRequest, res: Response): Promise<void>
   try {
     const { organization_id } = withOrg(req);
     if (!req.user) {
-      res.status(401).json({ error: 'Authentication required' });
+      sendError(res, 'Authentication required', 401);
       return;
     }
 
@@ -166,7 +167,7 @@ export async function createCase(req: AuthRequest, res: Response): Promise<void>
       req.body as CreateCaseBody;
 
     if (!title) {
-      res.status(400).json({ error: 'Title is required' });
+      sendError(res, 'Title is required', 400);
       return;
     }
 
@@ -176,7 +177,7 @@ export async function createCase(req: AuthRequest, res: Response): Promise<void>
         [assigned_to, organization_id]
       );
       if (assigneeCheck.length === 0) {
-        res.status(400).json({ error: 'Assigned user not found in organization' });
+        sendError(res, 'Assigned user not found in organization', 400);
         return;
       }
     }
@@ -208,10 +209,10 @@ export async function createCase(req: AuthRequest, res: Response): Promise<void>
       console.error('Failed to index case for RAG:', message);
     }
 
-    res.status(201).json({ case: newCase });
+    sendSuccess(res, { case: newCase }, 201);
   } catch (error) {
     console.error('CreateCase error:', error);
-    res.status(500).json({ error: 'Failed to create case' });
+    sendError(res, 'Failed to create case', 500);
   }
 }
 
@@ -219,7 +220,7 @@ export async function updateCase(req: AuthRequest, res: Response): Promise<void>
   try {
     const { organization_id } = withOrg(req);
     if (!req.user) {
-      res.status(401).json({ error: 'Authentication required' });
+      sendError(res, 'Authentication required', 401);
       return;
     }
 
@@ -233,7 +234,7 @@ export async function updateCase(req: AuthRequest, res: Response): Promise<void>
     );
 
     if (existing.length === 0) {
-      res.status(404).json({ error: 'Case not found' });
+      sendError(res, 'Case not found', 404);
       return;
     }
 
@@ -245,7 +246,7 @@ export async function updateCase(req: AuthRequest, res: Response): Promise<void>
         [assigned_to, organization_id]
       );
       if (assigneeCheck.length === 0) {
-        res.status(400).json({ error: 'Assigned user not found in organization' });
+        sendError(res, 'Assigned user not found in organization', 400);
         return;
       }
     }
@@ -294,10 +295,10 @@ export async function updateCase(req: AuthRequest, res: Response): Promise<void>
       console.error('Failed to re-index case for RAG:', message);
     }
 
-    res.json({ case: updatedCase });
+    sendSuccess(res, { case: updatedCase });
   } catch (error) {
     console.error('UpdateCase error:', error);
-    res.status(500).json({ error: 'Failed to update case' });
+    sendError(res, 'Failed to update case', 500);
   }
 }
 
@@ -305,7 +306,7 @@ export async function deleteCase(req: AuthRequest, res: Response): Promise<void>
   try {
     const { organization_id } = withOrg(req);
     if (!req.user) {
-      res.status(401).json({ error: 'Authentication required' });
+      sendError(res, 'Authentication required', 401);
       return;
     }
 
@@ -317,7 +318,7 @@ export async function deleteCase(req: AuthRequest, res: Response): Promise<void>
     );
 
     if (existing.length === 0) {
-      res.status(404).json({ error: 'Case not found' });
+      sendError(res, 'Case not found', 404);
       return;
     }
 
@@ -347,10 +348,10 @@ export async function deleteCase(req: AuthRequest, res: Response): Promise<void>
       console.error('Failed to delete case embedding:', message);
     }
 
-    res.json({ message: 'Case deleted successfully' });
+    sendSuccess(res, { message: 'Case deleted successfully' });
   } catch (error) {
     console.error('DeleteCase error:', error);
-    res.status(500).json({ error: 'Failed to delete case' });
+    sendError(res, 'Failed to delete case', 500);
   }
 }
 
@@ -413,10 +414,10 @@ export async function getCaseStats(req: AuthRequest, res: Response): Promise<voi
       by_priority,
     };
 
-    res.json(stats);
+    sendSuccess(res, stats);
   } catch (error) {
     console.error('GetCaseStats error:', error);
-    res.status(500).json({ error: 'Failed to fetch case statistics' });
+    sendError(res, 'Failed to fetch case statistics', 500);
   }
 }
 
@@ -432,9 +433,9 @@ export async function getOrgUsers(req: AuthRequest, res: Response): Promise<void
       [organization_id]
     );
 
-    res.json({ users });
+    sendSuccess(res, { users });
   } catch (error) {
     console.error('GetOrgUsers error:', error);
-    res.status(500).json({ error: 'Failed to fetch organization users' });
+    sendError(res, 'Failed to fetch organization users', 500);
   }
 }
